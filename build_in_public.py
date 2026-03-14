@@ -87,10 +87,11 @@ def remember_topic(topic):
 # ---------------------------------------------------------------------------
 
 def notify(title, message):
-    """macOS notification."""
-    safe_title = title.replace('"', '\\"')
-    safe_message = message.replace('"', '\\"')[:200]
-    script = f'display notification "{safe_message}" with title "{safe_title}"'
+    """macOS notification. Uses json.dumps for safe AppleScript escaping."""
+    import json
+    safe_title = json.dumps(title[:100])
+    safe_message = json.dumps(message[:200])
+    script = f'display notification {safe_message} with title {safe_title}'
     try:
         subprocess.run(
             ["osascript", "-e", script],
@@ -228,10 +229,11 @@ def run_pipeline():
         "status": "draft",
     }
 
-    # 7. Save to JSONL log
+    # 7. Save to JSONL log (owner-only permissions)
     log.info(f"Tweet: {tweet}")
     log.info(f"Blog: {blog[:100]}...")
-    with open(OUTPUT_FILE, "a") as f:
+    fd = os.open(OUTPUT_FILE, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(fd, "a") as f:
         f.write(json.dumps(record) + "\n")
     log.info(f"Saved to {OUTPUT_FILE}")
 

@@ -12,11 +12,14 @@ Three public functions:
 """
 
 import os
+# Force standard PIL image processor instead of Pillow-SIMD.
+# Required for compatibility with Qwen3-VL model on MLX.
 os.environ["TRANSFORMERS_NO_FAST_IMAGE_PROCESSOR"] = "1"
 
 import base64
 import subprocess
 import tempfile
+import time as _time
 import re
 import logging
 
@@ -39,7 +42,8 @@ MAX_SESSION_LOG = 5
 
 _model = None
 _processor = None
-_session_log = []
+_session_log = []       # list of (timestamp, description)
+SESSION_TTL = 3600      # expire entries older than 1 hour
 
 
 def load_model():
@@ -98,23 +102,33 @@ def run_text(prompt):
 # SESSION MEMORY
 # ---------------------------------------------------------------------------
 
+def _prune_session():
+    """Remove expired session entries."""
+    cutoff = _time.time() - SESSION_TTL
+    while _session_log and _session_log[0][0] < cutoff:
+        _session_log.pop(0)
+
+
 def remember_screen(description):
     """Track recent screen descriptions for continuity."""
-    _session_log.append(description)
+    _prune_session()
+    _session_log.append((_time.time(), description))
     if len(_session_log) > MAX_SESSION_LOG:
         _session_log.pop(0)
 
 
 def get_session_context():
     """Return recent activity as context string for the model."""
+    _prune_session()
     if not _session_log:
         return ""
-    return "Recent activity:\n" + "\n".join(f"- {d[:100]}" for d in _session_log)
+    return "Recent activity:\n" + "\n".join(f"- {d[:100]}" for _, d in _session_log)
 
 
 def get_session_history():
-    """Return a copy of the raw session log."""
-    return list(_session_log)
+    """Return a copy of the raw session log (descriptions only)."""
+    _prune_session()
+    return [d for _, d in _session_log]
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +164,11 @@ def get_idle_seconds():
 
 def take_screenshot():
     """Silent screenshot, no shutter sound. Returns temp file path or None."""
-    path = tempfile.mktemp(suffix=".png", prefix="spotter_")
+    # Use NamedTemporaryFile to avoid TOCTOU race condition.
+    # The file is created atomically; screencapture overwrites it.
+    fd = tempfile.NamedTemporaryFile(suffix=".png", prefix="spotter_", delete=False)
+    path = fd.name
+    fd.close()
     try:
         subprocess.run(
             ["screencapture", "-x", "-C", path],
@@ -159,6 +177,10 @@ def take_screenshot():
         return path
     except subprocess.CalledProcessError as e:
         log.error(f"Screenshot failed: {e}")
+        try:
+            os.remove(path)
+        except OSError:
+            pass
         return None
 
 
@@ -167,10 +189,32 @@ def take_screenshot():
 # ---------------------------------------------------------------------------
 
 def sanitize_text(text):
-    """Strip anything that looks like a secret from text."""
-    text = re.sub(r'[A-Za-z0-9_\-]{20,}', '', text)
-    text = re.sub(r'(/[\w.\-]+)+', '', text)
-    text = re.sub(r'(key|token|secret|password|api_key)\s*[=:]\s*\S+', '', text, flags=re.IGNORECASE)
+    """Strip anything that looks like a secret or PII from text.
+
+    Catches: long tokens, file paths, API keys, credit cards, SSNs,
+    email addresses, UUIDs, and credential keywords.
+    """
+    # Credit card patterns (4 groups of 4 digits)
+    text = re.sub(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b', '[REDACTED]', text)
+    # Social Security Numbers
+    text = re.sub(r'\b\d{3}-\d{2}-\d{4}\b', '[REDACTED]', text)
+    # Email addresses
+    text = re.sub(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b', '[REDACTED]', text)
+    # UUIDs
+    text = re.sub(r'\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b', '[REDACTED]', text, flags=re.IGNORECASE)
+    # Long alphanumeric tokens (potential secrets, 15+ chars)
+    text = re.sub(r'\b[A-Za-z0-9_\-]{15,}\b', '[REDACTED]', text)
+    # Unix file paths
+    text = re.sub(r'(/[\w.\-]+)+', '[PATH]', text)
+    # Windows file paths
+    text = re.sub(r'[A-Za-z]:\\[\w.\-\\]+', '[PATH]', text)
+    # Credential keywords followed by values
+    text = re.sub(
+        r'(key|token|secret|password|api_key|bearer|auth|credential|'
+        r'private_key|access_token|refresh_token|apikey|api[_\-]secret)\s*[=:]\s*\S+',
+        '[REDACTED]', text, flags=re.IGNORECASE,
+    )
+    # Collapse whitespace
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -183,13 +227,20 @@ VISION_PROMPT = (
     "Describe what this person is doing in 2-3 sentences. "
     "What application are they using, what task are they doing, "
     "and what might they be stuck on? "
-    "Be factual and concise."
+    "Be factual and concise. "
+    "IMPORTANT: Do NOT describe any passwords, API keys, tokens, file paths, "
+    "or other sensitive information visible on screen. If you see private data, "
+    "just note that sensitive content is visible without describing it."
 )
 
 
-def get_screen_context():
+def get_screen_context(include_history=True):
     """
     Take a screenshot, analyze it with the vision model, return structured text.
+
+    Args:
+        include_history: If True, include session_history in response.
+            Set to False for external API responses to limit data exposure.
 
     Returns dict: {"description": "...", "session_history": [...]}
     Raises RuntimeError if screenshot fails or system has no headroom.
@@ -213,7 +264,7 @@ def get_screen_context():
 
         return {
             "description": description,
-            "session_history": get_session_history(),
+            "session_history": get_session_history() if include_history else [],
         }
     finally:
         try:

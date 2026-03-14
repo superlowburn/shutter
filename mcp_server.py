@@ -39,7 +39,8 @@ def see_screen() -> dict:
     try:
         return core.get_screen_context()
     except RuntimeError as e:
-        return {"error": str(e)}
+        logging.error(f"see_screen error: {e}")
+        return {"error": "Failed to capture screen context"}
 
 
 @mcp.tool
@@ -61,7 +62,8 @@ def get_screenshot() -> list:
             )
         ]
     except RuntimeError as e:
-        return {"error": str(e)}
+        logging.error(f"get_screenshot error: {e}")
+        return {"error": "Failed to capture screenshot"}
 
 
 if __name__ == "__main__":

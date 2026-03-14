@@ -252,10 +252,11 @@ def remember_query(query):
 
 def notify(title, message, url=None):
     """Send a macOS notification. Opens URL in default browser if provided."""
-    safe_title = title.replace('"', '\\"')
-    safe_message = message.replace('"', '\\"')
+    import json as _json
+    safe_title = _json.dumps(title[:100])
+    safe_message = _json.dumps(message[:200])
 
-    script = f'display notification "{safe_message}" with title "{safe_title}"'
+    script = f'display notification {safe_message} with title {safe_title}'
     try:
         result = subprocess.run(
             ["osascript", "-e", script],
