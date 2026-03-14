@@ -5,9 +5,10 @@ Captures screenshots, runs a local vision model (Qwen3-VL-8B via Apple MLX),
 maintains session memory, and sanitizes output. This module is the shared
 foundation for both the HTTP API and MCP server.
 
-Two public functions:
+Three public functions:
     get_screen_context()   -> structured text describing what's on screen
     get_screenshot_bytes() -> base64-encoded PNG of the screen
+    run_text()             -> text-only model inference (no image)
 """
 
 import os
@@ -67,6 +68,23 @@ def run_vision(image_path, prompt):
     output = generate(
         _model, _processor, formatted_prompt, [image_path],
         max_tokens=300, temperature=0.3, repetition_penalty=1.2, verbose=False,
+    )
+    if isinstance(output, str):
+        return output.strip()
+    elif hasattr(output, 'text'):
+        return output.text.strip()
+    else:
+        return str(output).strip()
+
+
+def run_text(prompt):
+    """Run the model text-only (no image). Returns text."""
+    load_model()
+    from mlx_vlm import generate
+
+    output = generate(
+        _model, _processor, prompt, [],
+        max_tokens=200, temperature=0.2, repetition_penalty=1.2, verbose=False,
     )
     if isinstance(output, str):
         return output.strip()
