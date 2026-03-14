@@ -8,3 +8,5 @@ pyobjc-framework-Vision==12.1
 fastapi==0.135.1
 uvicorn==0.41.0
 fastmcp==3.1.0
+rumps==0.4.0
+py2app==0.28.10

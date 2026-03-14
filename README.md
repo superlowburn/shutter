@@ -12,29 +12,37 @@ Every AI tool wants to see your screen. macOS Screen Recording permission is all
 
 ## Quick Start
 
+### Build the App
+
 ```bash
 git clone https://github.com/superlowburn/shutter.git
 cd shutter
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+python setup.py py2app -A
+open dist/Shutter.app
 ```
 
-Grant Screen Recording permission to Terminal (System Settings > Privacy & Security > Screen Recording).
+Shutter appears in your menu bar. Click it and follow the prompt to grant Screen Recording permission. The vision model (~5GB) downloads automatically on first launch.
+
+### The Privacy Move
+
+Once Shutter.app is running:
+
+1. Open System Settings > Privacy & Security > Screen Recording
+2. Grant permission to **Shutter** (it should appear after first launch)
+3. Revoke permission from **Terminal** (and any other apps)
+
+Now Claude Code, Cursor, and every other AI tool must go through Shutter's API to see your screen. Shutter scrubs PII before they see anything.
 
 ### HTTP API
-
-```bash
-python api.py
-```
-
-Then from another terminal:
 
 ```bash
 # What's on my screen?
 curl http://localhost:9494/context
 
-# Get a screenshot
+# Get a screenshot (PII already redacted)
 curl http://localhost:9494/screenshot -o screen.png
 ```
 
@@ -54,6 +62,14 @@ Add to your Claude Code MCP config:
 ```
 
 Now Claude can see your screen. Try asking: "What am I working on right now?"
+
+### Developer Mode
+
+To run the API server directly (without the menu bar app):
+
+```bash
+python api.py
+```
 
 ## API
 
