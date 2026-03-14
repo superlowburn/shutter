@@ -1,5 +1,5 @@
 """
-Spotter Core — the screen context engine.
+Shutter Core — the screen context engine.
 
 Captures screenshots, runs a local vision model (Qwen3-VL-8B via Apple MLX),
 maintains session memory, and sanitizes output. This module is the shared
@@ -26,7 +26,7 @@ import logging
 import psutil
 import Quartz
 
-log = logging.getLogger("spotter")
+log = logging.getLogger("shutter")
 
 # ---------------------------------------------------------------------------
 # CONFIG
@@ -166,7 +166,7 @@ def take_screenshot():
     """Silent screenshot, no shutter sound. Returns temp file path or None."""
     # Use NamedTemporaryFile to avoid TOCTOU race condition.
     # The file is created atomically; screencapture overwrites it.
-    fd = tempfile.NamedTemporaryFile(suffix=".png", prefix="spotter_", delete=False)
+    fd = tempfile.NamedTemporaryFile(suffix=".png", prefix="shutter_", delete=False)
     path = fd.name
     fd.close()
     try:

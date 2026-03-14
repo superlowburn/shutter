@@ -1,5 +1,5 @@
 """
-Spotter HTTP API — localhost:9494
+Shutter HTTP API — localhost:9494
 
 GET /context     -> JSON screen description
 GET /screenshot  -> PNG image
@@ -19,10 +19,10 @@ from fastapi.responses import Response
 import core
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("spotter.api")
+log = logging.getLogger("shutter.api")
 
 app = FastAPI(
-    title="Spotter",
+    title="Shutter",
     description="Local screen context API. Gives any AI eyes on your Mac.",
     version="0.1.0",
 )
@@ -87,6 +87,6 @@ def get_screenshot():
 
 if __name__ == "__main__":
     import uvicorn
-    log.info("Starting Spotter API on http://127.0.0.1:9494")
+    log.info("Starting Shutter API on http://127.0.0.1:9494")
     log.info("WARNING: This server must never be exposed beyond localhost.")
     uvicorn.run(app, host="127.0.0.1", port=9494)

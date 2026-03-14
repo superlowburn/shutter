@@ -1,13 +1,13 @@
 """
-Spotter MCP Server — screen context for AI tools.
+Shutter MCP Server — screen context for AI tools.
 
 Add to Claude Code config (~/.claude.json or project .mcp.json):
 
     {
         "mcpServers": {
-            "spotter": {
+            "shutter": {
                 "command": "/path/to/venv/bin/python",
-                "args": ["/path/to/spotter/mcp_server.py"]
+                "args": ["/path/to/shutter/mcp_server.py"]
             }
         }
     }
@@ -22,7 +22,7 @@ import core
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-mcp = FastMCP("spotter")
+mcp = FastMCP("shutter")
 
 
 @mcp.tool

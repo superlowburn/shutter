@@ -1,25 +1,26 @@
-# Spotter
+# Shutter
 
-Give any AI eyes on your Mac. Local, private, open source.
+Control what AI can see on your screen. Local, private, open source.
 
-Spotter runs a vision model locally on your Mac and exposes an API so any AI
-can ask "what's on this person's screen right now?" Everything stays on your
-machine. Screenshots are captured, analyzed, and deleted. The only thing that
-leaves is a sanitized text description -- and only when an AI asks for it.
+Shutter is a permissions layer between your Mac's screen and AI. It runs a vision model locally on Apple Silicon, takes screenshots on demand, and returns sanitized text descriptions through a localhost API. AI tools get controlled glimpses of your screen -- not raw access.
 
 Two protocols: HTTP for anything, MCP for Claude Code and other AI tools.
 
+## Why
+
+Every AI tool wants to see your screen. macOS Screen Recording permission is all-or-nothing. Shutter sits in the middle: grant Screen Recording only to Shutter, and every AI tool has to ask *it* for access. Shutter decides what to share, strips secrets and PII, and keeps a log of who asked.
+
 ## Quick Start
 
-### Install
-
 ```bash
-git clone https://github.com/YOUR_USERNAME/spotter.git
-cd spotter
+git clone https://github.com/anthropomatt/shutter.git
+cd shutter
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+Grant Screen Recording permission to Terminal (System Settings > Privacy & Security > Screen Recording).
 
 ### HTTP API
 
@@ -44,9 +45,9 @@ Add to your Claude Code MCP config:
 ```json
 {
     "mcpServers": {
-        "spotter": {
+        "shutter": {
             "command": "/path/to/venv/bin/python",
-            "args": ["/path/to/spotter/mcp_server.py"]
+            "args": ["/path/to/shutter/mcp_server.py"]
         }
     }
 }
@@ -63,7 +64,7 @@ Returns a JSON description of what's on screen:
 ```json
 {
     "description": "User is in Logic Pro, adjusting a compressor on the vocal track.",
-    "session_history": ["Previous screen description..."]
+    "session_history": []
 }
 ```
 
@@ -77,27 +78,37 @@ Returns server status and model info.
 
 ## How It Works
 
-Spotter uses Qwen3-VL-8B (a vision-language model) running locally via Apple
-MLX. When an AI requests screen context, Spotter:
+Shutter uses Qwen3-VL-8B (a vision-language model) running locally via Apple MLX. When an AI requests screen context, Shutter:
 
-1. Takes a silent screenshot (macOS screencapture)
+1. Takes a silent screenshot (macOS `screencapture`)
 2. Feeds it to the local vision model
-3. Returns a sanitized text description of what's on screen
-4. Deletes the screenshot
+3. Strips secrets, PII, file paths, and tokens from the output
+4. Returns a sanitized text description
+5. Deletes the screenshot
 
-The model loads once and stays warm in memory (~5GB). First request takes
-30-60 seconds (model loading). Subsequent requests take 5-10 seconds.
+The model loads once and stays warm in memory (~5GB). First request takes 30-60 seconds (model loading). Subsequent requests take 5-10 seconds.
 
 ## Privacy
 
 - Screenshots never leave your machine
 - Only sanitized text descriptions are returned via the API
-- Secrets, file paths, and tokens are automatically stripped
-- The API only listens on localhost
+- Credit cards, SSNs, emails, file paths, API keys, and tokens are automatically stripped
+- The API only listens on localhost (127.0.0.1)
+- Rate limited to 10 requests/minute per endpoint
+- Session history is not exposed through the external API
 - You opt in by starting the server
+
+## Built On Shutter
+
+- **Build In Public** (`build_in_public.py`) -- watches your screen and generates tweet-length updates about what you're building. Ships with the repo as an example consumer.
+- **Learning Assistant** (`shutter.py`) -- watches your screen, figures out what you're stuck on, searches for answers. The original app that started this project.
 
 ## Requirements
 
 - macOS (Apple Silicon -- M1/M2/M3/M4)
 - Python 3.11+
 - ~5GB free RAM for the vision model
+
+## License
+
+MIT

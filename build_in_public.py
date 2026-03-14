@@ -2,7 +2,7 @@
 """
 Build In Public -- watches your screen, generates shareable content.
 
-Uses the Spotter platform to see what you're building, then crafts
+Uses the Shutter platform to see what you're building, then crafts
 tweet-length updates and blog-style notes. Everything stays local
 until you choose to share.
 

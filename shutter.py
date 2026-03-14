@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-SPOTTER — Your Learning Assistant
+SHUTTER — Your Learning Assistant
 Watches your screen. Figures out what you're working on. Finds answers
 before you ask. Runs 100% locally via Apple MLX.
 
 Setup:
-    python3 -m venv ~/spotter-env
-    source ~/spotter-env/bin/activate
+    python3 -m venv ~/shutter-env
+    source ~/shutter-env/bin/activate
     pip install mlx mlx-vlm psutil pyobjc-framework-Quartz ddgs torch torchvision
 
     Then just:
-    python3 spotter.py
+    python3 shutter.py
 """
 
 import os
@@ -40,8 +40,8 @@ CYCLE_INTERVAL = 30            # 30 seconds for testing (increase for production
 FAILURE_COOLDOWN_SECONDS = 120 # 2 minutes after a quiet/failed cycle
 MIN_RAM_AVAILABLE_GB = 1.0
 MAX_RECENT_QUERIES = 3
-LOG_FILE = os.path.expanduser("~/spotter.log")
-SCREENSHOT_PATH = "/tmp/spotter_screen.png"
+LOG_FILE = os.path.expanduser("~/shutter.log")
+SCREENSHOT_PATH = "/tmp/shutter_screen.png"
 MAX_SESSION_LOG = 5            # how many recent screen descriptions to remember
 
 # ---------------------------------------------------------------------------
@@ -56,7 +56,7 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
-log = logging.getLogger("spotter")
+log = logging.getLogger("shutter")
 
 # ---------------------------------------------------------------------------
 # MODEL — loads once, stays warm
@@ -381,7 +381,7 @@ def run_pipeline():
 
     # 6. Notify
     if result:
-        notify("Spotter", result["why"], result["url"])
+        notify("Shutter", result["why"], result["url"])
 
     # 7. Clean up screenshot
     try:
@@ -398,7 +398,7 @@ def run_pipeline():
 
 def main():
     log.info("=" * 60)
-    log.info("SPOTTER starting")
+    log.info("SHUTTER starting")
     log.info(f"Model: {MODEL_ID}")
     log.info(f"Cycle interval: {CYCLE_INTERVAL}s")
     log.info(f"Idle window: {MIN_IDLE_SECONDS}s-{MAX_IDLE_SECONDS}s")
