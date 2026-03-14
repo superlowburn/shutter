@@ -1,0 +1,7 @@
+mlx>=0.21
+mlx-vlm>=0.3
+psutil>=5.9
+pyobjc-framework-Quartz>=10.0
+fastapi>=0.100
+uvicorn>=0.20
+fastmcp>=2.0
