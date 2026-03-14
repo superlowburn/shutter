@@ -13,7 +13,7 @@ Every AI tool wants to see your screen. macOS Screen Recording permission is all
 ## Quick Start
 
 ```bash
-git clone https://github.com/anthropomatt/shutter.git
+git clone https://github.com/superlowburn/shutter.git
 cd shutter
 python3 -m venv venv
 source venv/bin/activate
@@ -97,11 +97,6 @@ The model loads once and stays warm in memory (~5GB). First request takes 30-60 
 - Rate limited to 10 requests/minute per endpoint
 - Session history is not exposed through the external API
 - You opt in by starting the server
-
-## Built On Shutter
-
-- **Build In Public** (`build_in_public.py`) -- watches your screen and generates tweet-length updates about what you're building. Ships with the repo as an example consumer.
-- **Learning Assistant** (`shutter.py`) -- watches your screen, figures out what you're stuck on, searches for answers. The original app that started this project.
 
 ## Requirements
 
