@@ -81,18 +81,20 @@ Returns server status and model info.
 Shutter uses Qwen3-VL-8B (a vision-language model) running locally via Apple MLX. When an AI requests screen context, Shutter:
 
 1. Takes a silent screenshot (macOS `screencapture`)
-2. Feeds it to the local vision model
-3. Strips secrets, PII, file paths, and tokens from the output
-4. Returns a sanitized text description
-5. Deletes the screenshot
+2. Runs OCR to detect and redact PII directly in the image (credit cards, SSNs, emails, phone numbers, IP addresses, crypto wallets, credentials)
+3. Feeds the redacted image to the local vision model
+4. Strips secrets and PII from the text output (defense in depth)
+5. Returns a sanitized text description
+6. Deletes the screenshot
 
 The model loads once and stays warm in memory (~5GB). First request takes 30-60 seconds (model loading). Subsequent requests take 5-10 seconds.
 
 ## Privacy
 
 - Screenshots never leave your machine
-- Only sanitized text descriptions are returned via the API
-- Credit cards, SSNs, emails, file paths, API keys, and tokens are automatically stripped
+- PII is redacted from the screenshot image before the vision model or any consumer sees it
+- Credit cards, SSNs, emails, phone numbers, IP addresses, crypto wallets, and credentials are detected via OCR and blacked out
+- Text output is additionally scrubbed for secrets, file paths, and tokens (defense in depth)
 - The API only listens on localhost (127.0.0.1)
 - Rate limited to 10 requests/minute per endpoint
 - Session history is not exposed through the external API

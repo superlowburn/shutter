@@ -36,6 +36,10 @@ MODEL_ID = "mlx-community/Qwen3-VL-8B-Instruct-4bit"
 MIN_RAM_AVAILABLE_GB = 1.0
 MAX_SESSION_LOG = 5
 
+# Image-level PII redaction (Apple Vision OCR).
+# Disable with SHUTTER_REDACT=0 environment variable.
+REDACT_SCREENSHOTS = os.environ.get("SHUTTER_REDACT", "1") != "0"
+
 # ---------------------------------------------------------------------------
 # MODEL — loads once, stays warm
 # ---------------------------------------------------------------------------
@@ -253,6 +257,11 @@ def get_screen_context(include_history=True):
         raise RuntimeError("Screenshot capture failed")
 
     try:
+        # Redact PII from image before the vision model sees it
+        if REDACT_SCREENSHOTS:
+            from redact import redact_image
+            img = redact_image(img)
+
         session_ctx = get_session_context()
         prompt = VISION_PROMPT
         if session_ctx:
@@ -285,6 +294,11 @@ def get_screenshot_bytes():
         raise RuntimeError("Screenshot capture failed")
 
     try:
+        # Redact PII from image before encoding
+        if REDACT_SCREENSHOTS:
+            from redact import redact_image
+            img = redact_image(img)
+
         with open(img, "rb") as f:
             image_data = base64.b64encode(f.read()).decode("utf-8")
 
